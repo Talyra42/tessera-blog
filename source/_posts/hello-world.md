@@ -19,7 +19,7 @@ categories:
 hexo new "文章标题"
 ```
 
-本地预览（默认 http://localhost:4000）：
+本地预览（默认 `http://localhost:4000`）：
 
 ``` bash
 pnpm server
