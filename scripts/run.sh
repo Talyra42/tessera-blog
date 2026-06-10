@@ -1,0 +1,1 @@
+pnpm clean && pnpm server

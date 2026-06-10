@@ -1,0 +1,94 @@
+// 页脚：与 Dock / 卡片一致的磨砂玻璃浮条
+#footer
+  position: relative
+  margin: 32px auto 32px
+  max-width: 1170px
+  width: calc(100% - 30px)
+  border: 1px solid var(--glass-border)
+  border-radius: var(--card-radius)
+  background: var(--glass-bg)
+  box-shadow: var(--card-box-shadow)
+  backdrop-filter: saturate(180%) blur(20px)
+  -webkit-backdrop-filter: saturate(180%) blur(20px)
+  overflow: hidden
+  color: var(--font-color)
+
+  +minWidth2000()
+    max-width: calc(60% - 30px)
+
+  +maxWidth768()
+    width: calc(100% - 20px)
+
+  & > *
+    position: relative
+    color: var(--font-color)
+
+  a
+    color: var(--font-color)
+    transition: all .3s ease-in-out
+
+    &:hover
+      color: $theme-color
+
+  .footer-separator
+    margin: 0 4px
+
+  .icp-icon
+    padding: 0 4px
+    max-height: 1.4em
+    width: auto
+    vertical-align: text-bottom
+
+  .footer-flex
+    display: flex
+    flex-direction: row
+    flex-wrap: wrap
+    justify-content: space-between
+    margin: 0 auto
+    padding: 36px 48px 4px
+    width: 100%
+    text-align: left
+    gap: 13px
+
+    +maxWidth768()
+      padding: 28px 24px 0
+      gap: 10px
+
+    .footer-flex-items
+      flex-shrink: 0
+      min-width: 100px
+      text-align: left
+      white-space: nowrap
+
+    .footer-flex-title
+      margin-bottom: 5px
+      white-space: nowrap
+      font-weight: 600
+      font-size: 1.4em
+
+    .footer-flex-item
+      margin: 10px 0
+      white-space: nowrap
+
+    a
+      display: block
+      white-space: nowrap
+
+  .footer-other
+    padding: 22px 20px
+    width: 100%
+    color: var(--card-meta)
+    text-align: center
+    font-size: .9em
+
+    a
+      color: var(--card-meta)
+
+      &:hover
+        color: $theme-color
+
+    if hexo-config('footer.nav')
+      border-top: 1px solid var(--glass-border)
+    else
+      .framework-info
+        display: block

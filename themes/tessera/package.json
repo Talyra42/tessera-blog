@@ -1,0 +1,33 @@
+{
+  "name": "hexo-theme-tessera",
+  "version": "1.0.0",
+  "description": "A Simple and Card UI Design theme for Hexo",
+  "main": "package.json",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "hexo",
+    "theme",
+    "tessera",
+    "Card UI Design",
+    "Talyra42",
+    "hexo-theme-tessera"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Talyra42/hexo-theme-tessera.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Talyra42/hexo-theme-tessera/issues"
+  },
+  "dependencies": {
+    "hexo-renderer-pug": "^3.0.0",
+    "hexo-renderer-stylus": "^3.0.1",
+    "hexo-util": "^4.0.0",
+    "moment-timezone": "^0.6.0"
+  },
+  "homepage": "https://github.com/Talyra42/hexo-theme-tessera",
+  "author": "Talyra42",
+  "license": "AGPL-3.0-only"
+}

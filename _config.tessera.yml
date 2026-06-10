@@ -1,0 +1,66 @@
+# --------------------------------------
+# Tessera 主题 · 个性化覆盖配置
+# 这里的设置会自动覆盖 themes/tessera/_config.yml 中的同名项，
+# 升级主题时无需改动主题目录。仅写需要自定义的项即可。
+# --------------------------------------
+
+# 导航菜单
+menu:
+  首页: / || fas fa-home
+  归档: /archives/ || fas fa-archive
+  标签: /tags/ || fas fa-tags
+  分类: /categories/ || fas fa-folder-open
+  关于: /about/ || fas fa-user
+
+# 社交链接（图标: 链接 || 描述 || 颜色）
+social:
+  fab fa-github: https://github.com/Talyra42 || Github || '#24292e'
+  fas fa-envelope: mailto:talyra42@foxmail.com || Email || '#4a7dbe'
+
+# 文章版权信息
+post_copyright:
+  enable: true
+  author_href: https://github.com/Talyra42
+  license: CC BY-NC-SA 4.0
+  license_url: https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+# 页脚
+footer:
+  owner:
+    enable: true
+    since: 2026
+  copyright:
+    enable: true
+    version: true
+
+# 侧栏
+aside:
+  card_author:
+    enable: true
+    description: 欢迎来到 Tessera —— Talyra42 的个人博客
+    button:
+      enable: true
+      icon: fab fa-github
+      text: Follow Me
+      link: https://github.com/Talyra42
+  card_announcement:
+    enable: true
+    content: 这里记录我的学习与思考，欢迎常来逛逛 ✨
+
+# 分享功能：留空即关闭，文章底部不显示任何分享方式
+share:
+  use:
+
+# 本地搜索（依赖 hexo-generator-searchdb）
+search:
+  use: local_search
+  local_search:
+    preload: false
+    top_n_per_article: 1
+
+# 字数统计 / 阅读时长（依赖 hexo-wordcount）
+wordcount:
+  enable: true
+  post_wordcount: true
+  min2read: true
+  total_wordcount: true

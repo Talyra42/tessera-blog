@@ -1,0 +1,56 @@
+#body-wrap
+  display: flex
+  flex-direction: column
+  min-height: 100vh
+
+.layout
+  display: flex
+  flex: 1 auto
+  margin: 0 auto
+  // 顶部留白为 Dock 让出空间（上下间距一致 ≈ 20px）；底部留白交给 Footer 的 margin
+  padding: 96px 15px 0
+  max-width: 1200px
+  width: 100%
+
+  +maxWidth900()
+    flex-direction: column
+
+  +maxWidth768()
+    padding: 96px 5px 0
+
+  +minWidth2000()
+    max-width: 60%
+
+  & > div:first-child:not(.nc)
+    @extend .cardHover
+    align-self: flex-start
+    padding: 50px 40px
+
+    +maxWidth768()
+      padding: 36px 14px
+
+  & > div:first-child
+    width: 74%
+    transition: all .3s
+
+    +maxWidth900()
+      width: 100% !important
+
+    if hexo-config('aside.position') == 'left'
+      +minWidth900()
+        order: 2
+
+  // 隱藏aside —— 文章占满内容区宽度（与 Dock 对齐）
+  &.hide-aside
+    & > div
+      width: 100% !important
+
+// for apple device
+.apple
+  #page-header.full_page
+    background-attachment: scroll !important
+
+  .recent-post-item,
+  .avatar-img,
+  .flink-item-icon
+    transform: translateZ(0)
