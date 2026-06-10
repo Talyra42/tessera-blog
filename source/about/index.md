@@ -4,7 +4,7 @@ date: 2026-06-10 18:30:00
 type: about
 aside: false
 about:
-  avatar: /img/tessera-logo.svg
+  avatar: /img/avatar.png
   tip: 你好，很高兴遇见你 👋
   name: Talyra42
   description: 学习者 · 思考者 · 折腾爱好者，在这里记录一切值得记录的事。
