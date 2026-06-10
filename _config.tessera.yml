@@ -64,3 +64,8 @@ wordcount:
   post_wordcount: true
   min2read: true
   total_wordcount: true
+
+# Pjax：跳页时只替换正文、不整页重载，避免背景重绘卡顿
+pjax:
+  enable: true
+  exclude:

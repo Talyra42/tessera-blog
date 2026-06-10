@@ -135,14 +135,9 @@
 
   &.nav-fixed
     #nav
-      position: fixed
-      top: 20px
-      z-index: 91
-      background: var(--glass-bg)
-      box-shadow: var(--card-box-shadow)
-      transition: all .3s
-      backdrop-filter: saturate(180%) blur(20px)
-      -webkit-backdrop-filter: saturate(180%) blur(20px)
+      // 下滑后：底部出现分割线 + 轻微阴影，体现层次关系
+      border-bottom-color: var(--glass-border)
+      box-shadow: 0 4px 18px rgba(0, 0, 0, .08)
 
       #blog-info
         color: var(--font-color)
@@ -153,11 +148,17 @@
         .site-name
           text-shadow: none
 
-        & > a:first-child
-          display: none
+        // 仅文章页存在 nav-page-title 时才滚出博客标题，首页/普通页保持标题常驻
+        &:has(.nav-page-title)
+          .nav-site-title
+            opacity: 0
+            transform: translateY(-100%)
+            pointer-events: none
 
-        & > a:last-child
-          display: inline
+        .nav-page-title
+          opacity: 1
+          visibility: visible
+          transform: translateY(0)
 
       a,
       span.site-page,
@@ -168,20 +169,7 @@
         &:hover
           color: $light-blue
 
-    &.fixed
-      #nav
-        top: 0
-        transition: all .5s
-
-  &.nav-visible:not(.fixed)
-    #nav
-      transition: all .5s
-      transform: none
-
   &.fixed
-    #nav
-      position: fixed
-
     & + .layout
       #card-toc
         .toc-content
@@ -268,36 +256,33 @@
         display: none
 
 #nav
-  // —— Dock 栏：圆角磨砂玻璃 + 常驻显示 + 与正文等宽
+  // —— 顶栏：与顶部贴合的全宽磨砂玻璃条；置顶时无分割线，下滑后底部出现分割线 + 阴影
   position: fixed
-  top: 20px
+  top: 0
   right: 0
   left: 0
   z-index: 91
   display: flex
   align-items: center
-  margin: 0 auto
-  padding: 0 24px
-  width: calc(100% - 30px)
-  max-width: 1170px
+  // 背景条铺满整行；内容限制在 1170 宽并居中（与正文对齐）
+  padding: 0 unquote('max(24px, calc((100% - 1170px) / 2))')
+  width: 100%
   height: 56px
-  border: 1px solid var(--glass-border)
-  border-radius: 18px
+  border-bottom: 1px solid transparent
   background: var(--glass-bg)
-  box-shadow: var(--card-box-shadow)
   backdrop-filter: saturate(180%) blur(20px)
   -webkit-backdrop-filter: saturate(180%) blur(20px)
   font-size: 1.3em
-  transition: box-shadow .3s, transform .3s
+  transition: border-color .3s ease, box-shadow .3s ease, background .3s ease
 
   +minWidth2000()
-    max-width: calc(60% - 30px)
+    padding: 0 20%
 
   +maxWidth768()
     padding: 0 16px
-    width: calc(100% - 20px)
 
   #blog-info
+    position: relative
     flex: 1
     color: var(--font-color)
     @extend .limit-one-line
@@ -307,8 +292,22 @@
       height: 36px
       vertical-align: middle
 
+    // 博客标题 / 文章标题 —— 垂直滚动切换（替代原本的瞬切）
+    .nav-site-title
+      display: inline-block
+      transition: opacity .4s cubic-bezier(.4, 0, .2, 1), transform .4s cubic-bezier(.4, 0, .2, 1)
+
     .nav-page-title
-      display: none
+      position: absolute
+      top: 0
+      left: 0
+      display: inline-flex
+      align-items: center
+      height: 100%
+      opacity: 0
+      visibility: hidden
+      transform: translateY(100%)
+      transition: opacity .4s cubic-bezier(.4, 0, .2, 1), transform .4s cubic-bezier(.4, 0, .2, 1), visibility .4s
 
   #toggle-menu
     display: none
@@ -333,7 +332,7 @@
     .menus_item
       position: relative
       display: inline-block
-      padding: 0 0 0 14px
+      padding: 0
 
       &:hover
         .menus_item_child
@@ -401,32 +400,45 @@
     #search-button span:not(.site-page)
       display: none
 
+  #menus
+    display: flex
+    align-items: center
+
   #search-button
-    display: inline
-    padding: 0 0 0 14px
+    display: inline-flex
+    align-items: center
 
   .site-page
     position: relative
-    padding-bottom: 6px
     font-size: .78em
     cursor: pointer
 
+    // 顶层导航项 —— 胶囊药丸造型
     &:not(.child)
-      &:after
-        position: absolute
-        bottom: 0
-        left: 0
-        z-index: -1
-        width: 0
-        height: 3px
-        background-color: lighten($theme-color, 30%)
-        content: ''
-        transition: all .3s ease-in-out
-        addBorderRadius()
+      display: inline-flex
+      align-items: center
+      margin: 0 2px
+      padding: 5px 14px
+      border: 1px solid transparent
+      border-radius: 999px
+      line-height: 1.5
+      white-space: nowrap
+      transition: background .35s ease, border-color .35s ease, color .35s ease, box-shadow .35s ease, transform .35s ease, backdrop-filter .35s ease
 
+      i
+        transition: transform .3s ease
+
+      // 悬浮 —— 纯玻璃质感：磨砂折射 + 细边 + 柔影（无白色填充）
       &:hover
-        &:after
-          width: 100%
+        border-color: rgba(140, 150, 170, .25)
+        box-shadow: var(--card-box-shadow)
+        backdrop-filter: saturate(180%) blur(16px)
+        -webkit-backdrop-filter: saturate(180%) blur(16px)
+        transform: translateY(-1px) scale(1.02)
+
+        i.fa-search,
+        i.fa-bars
+          transform: scale(1.12)
 
   .nav-page-title
     position: relative
