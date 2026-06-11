@@ -1,0 +1,871 @@
+diff --git a/_config.yml b/_config.yml
+index db2ac70..5e08d4c 100644
+--- a/_config.yml
++++ b/_config.yml
+@@ -150,7 +150,7 @@ subtitle:
+ # 5: Info displayed on the cover
+ # 6: Masonry layout - Cover on top, info on the bottom
+ # 7: Masonry layout - Info displayed on the cover
+-index_layout: 3
++index_layout: 6
+ 
+ # Display the article introduction on homepage
+ # 1: description
+@@ -821,6 +821,12 @@ activate_power_mode:
+ # Background effects
+ # --------------------------------------
+ 
++# Tessera right-click menu (Anzhiyu-style)
++# 自定义右键菜单：导航/复制/随机文章/昼夜切换；选中文字、链接、图片有情境动作
++# 按住 Ctrl 右键可呼出系统原生菜单
++rightmenu:
++  enable: true
++
+ # Tessera 3D background (theme signature)
+ # 漂浮玻璃碎片场，基于 three.js；深浅色模式自适应，移动端默认关闭
+ bg_3d:
+diff --git a/layout/includes/loading/fullpage-loading.pug b/layout/includes/loading/fullpage-loading.pug
+index 178ba59..b8aa4ed 100644
+--- a/layout/includes/loading/fullpage-loading.pug
++++ b/layout/includes/loading/fullpage-loading.pug
+@@ -1,147 +1,232 @@
+-#loading-box
+-  .loading-stage
+-    canvas#loading-cube(width='320' height='320' aria-hidden='true')
+-    .loading-word= _p('loading')
+-    .loading-bar
+-      .loading-bar-inner#loading-bar-inner
+-
+-//- Tessera 3D 加载动画：零依赖软件投影渲染器（无需等待 three.js，即开即用）
+-//- 26 个小立方体组成 Tessera 魔方，呼吸聚散 + 鼠标/触摸跟随倾斜
+-script.
+-  (() => {
+-    const cv = document.getElementById('loading-cube')
+-    if (!cv) return
+-    const ctx = cv.getContext('2d')
+-    const DPR = Math.min(window.devicePixelRatio || 1, 2)
+-    const SIZE = 320
+-    cv.width = SIZE * DPR
+-    cv.height = SIZE * DPR
+-    ctx.scale(DPR, DPR)
+-
+-    const dark = document.documentElement.getAttribute('data-theme') === 'dark'
+-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+-
+-    // 主题色 #425AEF
+-    const BASE = [66, 90, 239]
+-    const LIGHT = [137, 156, 255]
+-
+-    // 3x3x3 去掉中心 => 26 个小立方体
+-    const cells = []
+-    for (let x = -1; x <= 1; x++)
+-      for (let y = -1; y <= 1; y++)
+-        for (let z = -1; z <= 1; z++)
+-          if (x || y || z) cells.push([x, y, z])
+-
+-    // 单位立方体的顶点与面（面顶点按外法线逆时针）
+-    const V = [[-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],[-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]]
+-    const F = [[0,1,2,3],[5,4,7,6],[4,0,3,7],[1,5,6,2],[4,5,1,0],[3,2,6,7]]
+-    const N = [[0,0,-1],[0,0,1],[-1,0,0],[1,0,0],[0,-1,0],[0,1,0]]
+-
+-    let rx = -0.45, ry = 0.65          // 当前旋转
+-    let trx = rx, tryy = ry            // 目标旋转（鼠标交互）
+-    const onMove = (cx, cy) => {
+-      const nx = cx / window.innerWidth - 0.5
+-      const ny = cy / window.innerHeight - 0.5
+-      tryy = 0.65 + nx * 1.2
+-      trx = -0.45 - ny * 0.9
+-    }
+-    window.addEventListener('mousemove', e => onMove(e.clientX, e.clientY), { passive: true })
+-    window.addEventListener('touchmove', e => {
+-      if (e.touches[0]) onMove(e.touches[0].clientX, e.touches[0].clientY)
+-    }, { passive: true })
+-
+-    const rot = (p, ax, ay) => {
+-      let [x, y, z] = p
+-      let cy0 = Math.cos(ay), sy0 = Math.sin(ay)
+-      let x1 = x * cy0 - z * sy0, z1 = x * sy0 + z * cy0
+-      let cx0 = Math.cos(ax), sx0 = Math.sin(ax)
+-      let y2 = y * cx0 - z1 * sx0, z2 = y * sx0 + z1 * cx0
+-      return [x1, y2, z2]
+-    }
+-
+-    let t0 = performance.now()
+-    let raf
+-
+-    const draw = now => {
+-      const t = (now - t0) / 1000
+-      // 阻尼跟随鼠标
+-      rx += (trx - rx) * 0.06
+-      ry += (tryy - ry) * 0.06
+-      const ay = ry + (reduceMotion ? 0 : t * 0.4)
+-      const ax = rx + (reduceMotion ? 0 : Math.sin(t * 0.5) * 0.1)
+-
+-      // 呼吸聚散：小方块离中心的间距周期变化
+-      const gap = reduceMotion ? 1.15 : 1.15 + Math.sin(t * 1.8) * 0.22
+-      const half = 0.42                     // 小立方体半边长
+-      const cam = 10                        // 相机距离
+-      const fov = 300                       // 焦距
+-
+-      ctx.clearRect(0, 0, SIZE, SIZE)
+-      const quads = []
+-      for (const c of cells) {
+-        const cx3 = c[0] * gap, cy3 = c[1] * gap, cz3 = c[2] * gap
+-        // 角块微延迟，产生波浪感
+-        const wob = reduceMotion ? 0 : Math.sin(t * 1.8 - (Math.abs(c[0]) + Math.abs(c[1]) + Math.abs(c[2]))) * 0.04
+-        for (let f = 0; f < 6; f++) {
+-          const n = rot(N[f], ax, ay)
+-          if (n[2] < 0.02) continue          // 背面剔除：相机位于 +z，仅保留法线朝向相机的面
+-          const pts = []
+-          let zsum = 0
+-          for (const vi of F[f]) {
+-            const p = rot([
+-              cx3 + V[vi][0] * (half + wob),
+-              cy3 + V[vi][1] * (half + wob),
+-              cz3 + V[vi][2] * (half + wob)
+-            ], ax, ay)
+-            const s = fov / (cam - p[2])
+-            pts.push([SIZE / 2 + p[0] * s, SIZE / 2 + p[1] * s])
+-            zsum += p[2]
+-          }
+-          // 平面光照：法线与光源方向点积
+-          const lum = Math.max(0, n[0] * 0.45 - n[1] * 0.6 - n[2] * 0.66)
+-          quads.push({ z: zsum / 4, pts, lum })
+-        }
+-      }
+-      quads.sort((a, b) => a.z - b.z)        // 画家算法：远的先画
+-      for (const q of quads) {
+-        const k = q.lum
+-        const r = BASE[0] + (LIGHT[0] - BASE[0]) * k
+-        const g = BASE[1] + (LIGHT[1] - BASE[1]) * k
+-        const b = BASE[2] + (LIGHT[2] - BASE[2]) * k
+-        ctx.beginPath()
+-        ctx.moveTo(q.pts[0][0], q.pts[0][1])
+-        for (let i = 1; i < 4; i++) ctx.lineTo(q.pts[i][0], q.pts[i][1])
+-        ctx.closePath()
+-        ctx.fillStyle = 'rgba(' + (r | 0) + ',' + (g | 0) + ',' + (b | 0) + ',' + (dark ? 0.92 : 0.95) + ')'
+-        ctx.fill()
+-        ctx.strokeStyle = dark ? 'rgba(24,23,29,.55)' : 'rgba(247,249,254,.7)'
+-        ctx.lineWidth = 1
+-        ctx.stroke()
+-      }
+-      raf = requestAnimationFrame(draw)
+-    }
+-    raf = requestAnimationFrame(draw)
+-
+-    // 模拟进度条：渐进逼近 90%，load 后冲满
+-    const bar = document.getElementById('loading-bar-inner')
+-    let prog = 0
+-    const tick = setInterval(() => {
+-      prog += (90 - prog) * 0.06
+-      if (bar) bar.style.width = prog.toFixed(1) + '%'
+-    }, 120)
+-    const finish = () => {
+-      clearInterval(tick)
+-      if (bar) bar.style.width = '100%'
+-      // 遮罩淡出后停掉渲染，释放资源
+-      setTimeout(() => cancelAnimationFrame(raf), 800)
+-    }
+-    if (document.readyState === 'complete') finish()
+-    else {
+-      window.addEventListener('load', finish)
+-      setTimeout(finish, 7000)
+-    }
+-  })()
+-
++#loading-box
++  .loading-stage
++    canvas#loading-canvas(width='560' height='280' aria-hidden='true')
++    .loading-bar
++      .loading-bar-inner#loading-bar-inner
++
++//- Tessera 变形粒子加载动画：零依赖软件 3D 渲染
++//- 700 粒子在「球体 - TESSERA 字样 - 环面结」间循环变形，相变带爆发冲量，鼠标可推开粒子
++script.
++  (() => {
++    const cv = document.getElementById('loading-canvas')
++    if (!cv) return
++    const ctx = cv.getContext('2d')
++    const DPR = Math.min(window.devicePixelRatio || 1, 2)
++    const W = 560, H = 280
++    cv.width = W * DPR
++    cv.height = H * DPR
++    ctx.scale(DPR, DPR)
++
++    const dark = document.documentElement.getAttribute('data-theme') === 'dark'
++    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
++    const BASE = dark ? [99, 125, 255] : [66, 90, 239]
++    const LIGHT = dark ? [185, 198, 255] : [143, 163, 255]
++
++    const N = 700
++    const CAM = 11, FOV = 460
++
++    // ---- 形状目标 ----
++    // 1) TESSERA 文字：离屏画布采样像素
++    const textPts = (() => {
++      const oc = document.createElement('canvas')
++      oc.width = 720; oc.height = 160
++      const o = oc.getContext('2d')
++      o.font = '900 104px -apple-system, "Segoe UI", Arial, sans-serif'
++      o.textAlign = 'center'
++      o.textBaseline = 'middle'
++      o.fillText('TESSERA', 360, 86)
++      const d = o.getImageData(0, 0, 720, 160).data
++      const pts = []
++      for (let y = 0; y < 160; y += 3)
++        for (let x = 0; x < 720; x += 3)
++          if (d[(y * 720 + x) * 4 + 3] > 128)
++            pts.push([(x - 360) / 58, (y - 80) / 58, (Math.random() - 0.5) * 0.5])
++      return pts
++    })()
++
++    // 2) 斐波那契球壳
++    const spherePts = (() => {
++      const pts = [], GA = Math.PI * (3 - Math.sqrt(5))
++      for (let i = 0; i < N; i++) {
++        const y = 1 - (i / (N - 1)) * 2
++        const r = Math.sqrt(1 - y * y), th = GA * i
++        pts.push([Math.cos(th) * r * 2.6, y * 2.6, Math.sin(th) * r * 2.6])
++      }
++      return pts
++    })()
++
++    // 3) 三叶环面结 (p=2, q=3)
++    const knotPts = (() => {
++      const pts = []
++      for (let i = 0; i < N; i++) {
++        const t = (i / N) * Math.PI * 2
++        const r = 1.0 + 0.5 * Math.cos(3 * t)
++        const x = r * Math.cos(2 * t) * 2.2
++        const y = r * Math.sin(2 * t) * 2.2
++        const z = 0.9 * Math.sin(3 * t) * 2.2
++        const j = 0.16
++        pts.push([x + (Math.random() - 0.5) * j, y + (Math.random() - 0.5) * j, z + (Math.random() - 0.5) * j])
++      }
++      return pts
++    })()
++
++    const pick = (arr, i) => arr[(i * 7919) % arr.length]
++
++    // ---- 粒子 ----
++    const P = []
++    for (let i = 0; i < N; i++) {
++      const sp = spherePts[i]
++      P.push({
++        x: sp[0] * 2, y: sp[1] * 2, z: sp[2] * 2,   // 从外围散开状态汇入
++        vx: 0, vy: 0, vz: 0,
++        ox: 0, oy: 0,                                // 鼠标排斥的屏幕偏移
++        w: 0.5 + Math.random()                       // 个体噪声权重
++      })
++    }
++
++    // 相位时间轴：球(2.2s) 起手，此后 文字(4.2s) 与 环面结(3s) 交替
++    const PHASES = [
++      { shape: 'sphere', dur: 2.2 },
++      { shape: 'text', dur: 4.2 },
++      { shape: 'knot', dur: 3.0 },
++      { shape: 'text', dur: 4.2 }
++    ]
++    let phaseIdx = 0, phaseT = 0
++    const targetOf = (i, shape) => {
++      if (shape === 'text') return pick(textPts, i)
++      if (shape === 'knot') return knotPts[i]
++      return spherePts[i]
++    }
++
++    // 鼠标排斥（画布坐标系）
++    let mx = -9999, my = -9999
++    const toLocal = (cx, cy) => {
++      const r = cv.getBoundingClientRect()
++      mx = (cx - r.left) / r.width * W
++      my = (cy - r.top) / r.height * H
++    }
++    window.addEventListener('mousemove', e => toLocal(e.clientX, e.clientY), { passive: true })
++    window.addEventListener('touchmove', e => {
++      if (e.touches[0]) toLocal(e.touches[0].clientX, e.touches[0].clientY)
++    }, { passive: true })
++
++    let rotY = 0.9, t0 = performance.now(), last = t0, raf
++
++    const draw = now => {
++      const dt = Math.min((now - last) / 1000, 0.05)
++      last = now
++      const t = (now - t0) / 1000
++
++      // 相位推进 + 相变爆发冲量
++      phaseT += dt
++      const phase = PHASES[phaseIdx % PHASES.length]
++      if (phaseT >= phase.dur) {
++        phaseT = 0
++        phaseIdx++
++        for (const p of P) {   // 切向旋涡冲量，让变形像一次小爆发
++          const d = Math.hypot(p.x, p.z) + 0.001
++          p.vx += (-p.z / d) * 2.4 * p.w
++          p.vz += (p.x / d) * 2.4 * p.w
++          p.vy += (Math.random() - 0.5) * 1.6
++        }
++      }
++      const shape = PHASES[phaseIdx % PHASES.length].shape
++
++      // 文字阶段：旋转角回正便于阅读；其余阶段持续自转
++      if (shape === 'text') {
++        const home = Math.round(rotY / (Math.PI * 2)) * Math.PI * 2
++        rotY += (home - rotY) * Math.min(dt * 4, 1)
++      } else {
++        rotY += dt * 0.55
++      }
++      const cy = Math.cos(rotY), sy = Math.sin(rotY)
++      const tilt = shape === 'text' ? 0 : Math.sin(t * 0.6) * 0.3
++      const ct = Math.cos(tilt), st = Math.sin(tilt)
++
++      ctx.clearRect(0, 0, W, H)
++      for (let i = 0; i < N; i++) {
++        const p = P[i]
++        const tg = targetOf(i, shape)
++        // 弹簧逼近目标 + 冲量速度衰减 + 个体微噪声
++        const wob = Math.sin(t * 1.4 + i) * 0.015 * p.w
++        p.vx *= 0.9; p.vy *= 0.9; p.vz *= 0.9
++        p.x += (tg[0] - p.x) * 0.055 + p.vx * dt * 6 + wob
++        p.y += (tg[1] - p.y) * 0.055 + p.vy * dt * 6
++        p.z += (tg[2] - p.z) * 0.055 + p.vz * dt * 6 + wob
++
++        // 旋转（Y 轴 + 轻微 X 倾斜）
++        const x1 = p.x * cy - p.z * sy
++        const z1 = p.x * sy + p.z * cy
++        const y2 = p.y * ct - z1 * st
++        const z2 = p.y * st + z1 * ct
++
++        const s = FOV / (CAM - z2)
++        let sx = W / 2 + x1 * s
++        let syp = H / 2 + y2 * s
++
++        // 鼠标排斥：屏幕空间推力，带阻尼回弹
++        const dx = sx - mx, dy = syp - my
++        const dist = Math.hypot(dx, dy)
++        let px = 0, py = 0
++        if (dist < 70 && dist > 0.01) {
++          const f = (70 - dist) / 70 * 26
++          px = dx / dist * f
++          py = dy / dist * f
++        }
++        p.ox += (px - p.ox) * 0.18
++        p.oy += (py - p.oy) * 0.18
++        sx += p.ox
++        syp += p.oy
++
++        const depth = Math.max(0, Math.min(1, (z2 + 3) / 6))
++        const r = (BASE[0] + (LIGHT[0] - BASE[0]) * depth) | 0
++        const g = (BASE[1] + (LIGHT[1] - BASE[1]) * depth) | 0
++        const b = (BASE[2] + (LIGHT[2] - BASE[2]) * depth) | 0
++        ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + (0.45 + depth * 0.5) + ')'
++        ctx.beginPath()
++        ctx.arc(sx, syp, 1.1 + depth * 1.5, 0, 6.2832)
++        ctx.fill()
++      }
++      raf = requestAnimationFrame(draw)
++    }
++
++    if (reduceMotion) {
++      // 静态：直接渲染文字形态
++      for (let i = 0; i < N; i++) {
++        const tg = pick(textPts, i)
++        const s = FOV / (CAM - tg[2])
++        const depth = Math.max(0, Math.min(1, (tg[2] + 3) / 6))
++        const r = (BASE[0] + (LIGHT[0] - BASE[0]) * depth) | 0
++        const g = (BASE[1] + (LIGHT[1] - BASE[1]) * depth) | 0
++        const b = (BASE[2] + (LIGHT[2] - BASE[2]) * depth) | 0
++        ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',0.9)'
++        ctx.beginPath()
++        ctx.arc(W / 2 + tg[0] * s, H / 2 + tg[1] * s, 1.8, 0, 6.2832)
++        ctx.fill()
++      }
++    } else {
++      raf = requestAnimationFrame(draw)
++    }
++
++    // 进度条：渐进逼近 90%，load 后冲满并释放渲染资源
++    const bar = document.getElementById('loading-bar-inner')
++    let prog = 0
++    const tick = setInterval(() => {
++      prog += (90 - prog) * 0.06
++      if (bar) bar.style.width = prog.toFixed(1) + '%'
++    }, 120)
++    const finish = () => {
++      clearInterval(tick)
++      if (bar) bar.style.width = '100%'
++      setTimeout(() => cancelAnimationFrame(raf), 800)
++    }
++    if (document.readyState === 'complete') finish()
++    else {
++      window.addEventListener('load', finish)
++      setTimeout(finish, 7000)
++    }
++  })()
++
+ script.
+   (()=>{
+     const $loadingBox = document.getElementById('loading-box')
+diff --git a/layout/includes/third-party/effect.pug b/layout/includes/third-party/effect.pug
+index 7120fb6..3107489 100644
+--- a/layout/includes/third-party/effect.pug
++++ b/layout/includes/third-party/effect.pug
+@@ -1,3 +1,7 @@
++//- Tessera 右键菜单（致敬安知鱼）
++if theme.rightmenu && theme.rightmenu.enable
++  script(defer src=url_for(theme.asset.rightmenu))
++
+ //- Tessera 3D 玻璃碎片背景（主题视觉签名）
+ if theme.bg_3d && theme.bg_3d.enable
+   script(defer src=url_for(theme.asset.threejs))
+diff --git a/scripts/common/default_config.js b/scripts/common/default_config.js
+index ae2a4a7..2a87bcf 100644
+--- a/scripts/common/default_config.js
++++ b/scripts/common/default_config.js
+@@ -76,7 +76,7 @@ module.exports = {
+     source: false,
+     sub: null
+   },
+-  index_layout: 3,
++  index_layout: 6,
+   index_post_content: {
+     method: 3,
+     length: 500
+@@ -481,6 +481,9 @@ module.exports = {
+     enable: false,
+     mobile: false
+   },
++  rightmenu: {
++    enable: true
++  },
+   bg_3d: {
+     enable: true,
+     mobile: false,
+diff --git a/scripts/events/cdn.js b/scripts/events/cdn.js
+index b090f05..4b3d09f 100644
+--- a/scripts/events/cdn.js
++++ b/scripts/events/cdn.js
+@@ -34,6 +34,11 @@ hexo.extend.filter.register('before_generate', () => {
+       file: 'js/bg3d.js',
+       version
+     },
++    rightmenu: {
++      name: 'hexo-theme-tessera',
++      file: 'js/rightmenu.js',
++      version
++    },
+     local_search: {
+       name: 'hexo-theme-tessera',
+       file: 'js/search/local-search.js',
+diff --git a/scripts/events/rightmenu_data.js b/scripts/events/rightmenu_data.js
+new file mode 100644
+index 0000000..67bd438
+--- /dev/null
++++ b/scripts/events/rightmenu_data.js
+@@ -0,0 +1,19 @@
++/**
++ * Tessera
++ * 生成右键菜单「随机文章」所需的数据文件 rightmenu-posts.json
++ */
++
++'use strict'
++
++hexo.extend.generator.register('rightmenu_posts', function (locals) {
++  if (!hexo.theme.config.rightmenu || !hexo.theme.config.rightmenu.enable) return
++  const root = hexo.config.root || '/'
++  const data = locals.posts.sort('-date').map(post => ({
++    t: post.title || '',
++    u: root + post.path
++  }))
++  return {
++    path: 'rightmenu-posts.json',
++    data: JSON.stringify(data)
++  }
++})
+diff --git a/source/css/_layout/aside.styl b/source/css/_layout/aside.styl
+index 6d75a27..86d6be0 100644
+--- a/source/css/_layout/aside.styl
++++ b/source/css/_layout/aside.styl
+@@ -151,11 +151,22 @@
+ 
+   // 最新文章 —— 列表项悬浮卡片高亮（与下方分类列表保持一致的交互）
+   .card-recent-post .aside-list > .aside-list-item
++    position: relative
+     margin: 0 -10px
+     padding: 8px 10px
+     border-radius: 10px
+     transition: background-color .3s ease, transform .3s ease
+ 
++    // 拉伸链接：让标题 a 的点击热区铺满整个列表项（整卡可点击跳转）
++    .content > .title::after
++      position: absolute
++      top: 0
++      left: 0
++      z-index: 1
++      width: 100%
++      height: 100%
++      content: ''
++
+     &:hover
+       background-color: var(--text-bg-hover)
+       transform: translateX(3px)
+diff --git a/source/css/_layout/loading.styl b/source/css/_layout/loading.styl
+index da0143c..2334c32 100644
+--- a/source/css/_layout/loading.styl
++++ b/source/css/_layout/loading.styl
+@@ -18,25 +18,13 @@ if hexo-config('preloader.enable') && hexo-config('preloader.source') == 1
+       flex-direction: column
+       align-items: center
+ 
+-    #loading-cube
+-      width: 240px
+-      height: 240px
+-      cursor: grab
+-
+-      +maxWidth768()
+-        width: 190px
+-        height: 190px
+-
+-    .loading-word
+-      margin-top: 4px
+-      color: var(--font-color)
+-      font-size: 14px
+-      letter-spacing: 4px
+-      opacity: .75
++    #loading-canvas
++      width: min(86vw, 460px)
++      height: auto
+ 
+     .loading-bar
+       overflow: hidden
+-      margin-top: 18px
++      margin-top: 10px
+       width: 180px
+       height: 4px
+       border-radius: 4px
+diff --git a/source/css/_layout/post.styl b/source/css/_layout/post.styl
+index b905c75..5224b8f 100644
+--- a/source/css/_layout/post.styl
++++ b/source/css/_layout/post.styl
+@@ -192,7 +192,7 @@ beautify()
+         padding: 22px 20px
+ 
+       .post-title
+-        margin-bottom: 8px
++        margin: 0 0 8px
+         color: var(--text-highlight-color)
+         font-weight: bold
+         font-size: 2.2em
+diff --git a/source/css/_layout/rightmenu.styl b/source/css/_layout/rightmenu.styl
+new file mode 100644
+index 0000000..714133c
+--- /dev/null
++++ b/source/css/_layout/rightmenu.styl
+@@ -0,0 +1,86 @@
++// Tessera 右键菜单：玻璃卡片风格，与 Dock / 卡片体系同一套设计令牌
++if hexo-config('rightmenu.enable')
++  #tessera-rightmenu
++    position: fixed
++    z-index: 1100
++    min-width: 200px
++    padding: 8px
++    border: 1px solid var(--glass-border)
++    border-radius: 12px
++    background: var(--card-bg)
++    box-shadow: var(--card-hover-box-shadow)
++    backdrop-filter: saturate(180%) blur(var(--glass-blur))
++    -webkit-backdrop-filter: saturate(180%) blur(var(--glass-blur))
++    visibility: hidden
++    opacity: 0
++    transform: scale(.92)
++    transform-origin: top left
++    transition: opacity .18s ease, transform .18s ease, visibility .18s
++    user-select: none
++
++    &.show
++      visibility: visible
++      opacity: 1
++      transform: scale(1)
++
++    button
++      border: none
++      background: none
++      color: var(--font-color)
++      font-size: 14px
++      font-family: inherit
++      cursor: pointer
++
++    .rm-nav
++      display: flex
++      justify-content: space-between
++      gap: 4px
++      margin-bottom: 6px
++      padding-bottom: 8px
++      border-bottom: 1px solid var(--glass-border)
++
++      .rm-nav-btn
++        flex: 1
++        padding: 7px 0
++        border-radius: 8px
++        transition: background .2s ease, color .2s ease
++
++        &:hover
++          background: var(--tessera-primary)
++          color: #fff
++
++    .rm-group
++      display: flex
++      flex-direction: column
++
++      &.rm-ctx:not(:empty)
++        margin-bottom: 6px
++        padding-bottom: 6px
++        border-bottom: 1px solid var(--glass-border)
++
++      .rm-item
++        display: flex
++        align-items: center
++        gap: 10px
++        padding: 8px 10px
++        max-width: 260px
++        border-radius: 8px
++        text-align: left
++        white-space: nowrap
++        overflow: hidden
++        text-overflow: ellipsis
++        transition: background .2s ease, color .2s ease
++
++        i
++          width: 16px
++          text-align: center
++          font-size: 13px
++
++        &:hover
++          background: var(--tessera-primary)
++          color: #fff
++
++  // 移动端长按体验不佳，直接隐藏（系统菜单照常）
++  +maxWidth768()
++    #tessera-rightmenu
++      display: none !important
+diff --git a/source/css/_page/common.styl b/source/css/_page/common.styl
+index b561fee..026afe8 100644
+--- a/source/css/_page/common.styl
++++ b/source/css/_page/common.styl
+@@ -16,7 +16,7 @@
+     flex-direction: column
+ 
+   +maxWidth768()
+-    padding: 96px 5px 0
++    padding: 96px 12px 0
+ 
+   +minWidth2000()
+     max-width: 60%
+diff --git a/source/css/_page/homepage.styl b/source/css/_page/homepage.styl
+index f613119..531a652 100644
+--- a/source/css/_page/homepage.styl
++++ b/source/css/_page/homepage.styl
+@@ -172,4 +172,44 @@ $indexEnable = hexo-config('cover.index_enable')
+       & > .content
+         @extend .limit-more-line
+         -webkit-line-clamp: 2
+-        word-break: break-word
+\ No newline at end of file
++        word-break: break-word
++// Tessera 瀑布流（index_layout: 6）
++// 安知鱼式图上文下卡片 + CSS columns 流式布局：卡片高度随内容自然参差
++if $indexLayout == 6
++  #recent-posts
++    .recent-post-items
++      column-count: 2
++      column-gap: 16px
++
++      +maxWidth768()
++        column-count: 1
++
++      +minWidth2000()
++        column-count: 3
++
++    .recent-post-item
++      display: inline-block
++      margin-bottom: 16px
++      width: 100%
++      vertical-align: top
++      break-inside: avoid
++      -webkit-column-break-inside: avoid
++
++      &:hover
++        transform: translateY(-3px)
++
++      .post_cover
++        height: 200px
++
++      & > .recent-post-info
++        padding: 18px 22px 20px
++
++        & > .article-title
++          font-size: 1.26em
++          font-weight: 600
++          line-height: 1.45
++
++        & > .content
++          margin-top: 4px
++          -webkit-line-clamp: 3
++          font-size: .92em
+diff --git a/source/js/rightmenu.js b/source/js/rightmenu.js
+new file mode 100644
+index 0000000..4e07d1e
+--- /dev/null
++++ b/source/js/rightmenu.js
+@@ -0,0 +1,152 @@
++/**
++ * Tessera Right Menu — 自定义右键菜单（致敬安知鱼）
++ * 顶部导航图标排 + 情境动作（选中文字 / 链接 / 图片）+ 通用动作
++ * 玻璃卡片风格，深浅色自适应；事件委托实现，天然兼容 Pjax
++ */
++(() => {
++  'use strict'
++
++  const ROOT = (window.GLOBAL_CONFIG && GLOBAL_CONFIG.root) || '/'
++
++  // ---------- 构建菜单 DOM ----------
++  const menu = document.createElement('div')
++  menu.id = 'tessera-rightmenu'
++  menu.innerHTML = `
++    <div class="rm-nav">
++      <button class="rm-nav-btn" data-act="back" title="后退"><i class="fas fa-arrow-left"></i></button>
++      <button class="rm-nav-btn" data-act="forward" title="前进"><i class="fas fa-arrow-right"></i></button>
++      <button class="rm-nav-btn" data-act="refresh" title="刷新"><i class="fas fa-rotate-right"></i></button>
++      <button class="rm-nav-btn" data-act="top" title="回到顶部"><i class="fas fa-arrow-up"></i></button>
++    </div>
++    <div class="rm-group rm-ctx"></div>
++    <div class="rm-group">
++      <button class="rm-item" data-act="random"><i class="fas fa-shuffle"></i><span>随机前往一篇文章</span></button>
++      <button class="rm-item" data-act="copyurl"><i class="fas fa-link"></i><span>复制本页网址</span></button>
++      <button class="rm-item" data-act="darkmode"><i class="fas fa-circle-half-stroke"></i><span>切换昼夜模式</span></button>
++    </div>`
++  document.body.appendChild(menu)
++  const ctxGroup = menu.querySelector('.rm-ctx')
++
++  // ---------- 工具 ----------
++  const copy = text => {
++    if (navigator.clipboard) return navigator.clipboard.writeText(text)
++    const ta = document.createElement('textarea')
++    ta.value = text
++    document.body.appendChild(ta)
++    ta.select()
++    document.execCommand('copy')
++    ta.remove()
++    return Promise.resolve()
++  }
++  const toast = msg => {
++    if (window.btf && btf.snackbarShow) btf.snackbarShow(msg)
++  }
++
++  let postsCache = null
++  const randomPost = async () => {
++    try {
++      if (!postsCache) {
++        const res = await fetch(ROOT + 'rightmenu-posts.json')
++        postsCache = await res.json()
++      }
++      if (postsCache && postsCache.length) {
++        const p = postsCache[Math.floor(Math.random() * postsCache.length)]
++        window.location.href = p.u
++      }
++    } catch (e) { /* 数据缺失时静默 */ }
++  }
++
++  // ---------- 显示 / 隐藏 ----------
++  let ctxState = {}
++  const hide = () => menu.classList.remove('show')
++
++  const show = (x, y) => {
++    menu.classList.add('show')
++    // 先显示再测量，做视口防溢出翻转
++    const mw = menu.offsetWidth
++    const mh = menu.offsetHeight
++    if (x + mw > window.innerWidth - 8) x = x - mw
++    if (y + mh > window.innerHeight - 8) y = y - mh
++    menu.style.left = Math.max(8, x) + 'px'
++    menu.style.top = Math.max(8, y) + 'px'
++  }
++
++  const item = (act, icon, label) =>
++    '<button class="rm-item" data-act="' + act + '"><i class="fas ' + icon + '"></i><span>' + label + '</span></button>'
++
++  document.addEventListener('contextmenu', e => {
++    // 输入区不接管，保留系统菜单；按住 Ctrl 也放行（逃生通道）
++    if (e.ctrlKey || e.target.closest('input, textarea, [contenteditable]')) return
++    e.preventDefault()
++
++    const sel = (window.getSelection() || '').toString().trim()
++    const link = e.target.closest('a[href]')
++    const img = e.target.closest('img')
++    ctxState = {
++      sel,
++      href: link ? link.href : '',
++      src: img ? (img.currentSrc || img.src) : ''
++    }
++
++    let html = ''
++    if (sel) {
++      const short = sel.length > 8 ? sel.slice(0, 8) + '…' : sel
++      html += item('copysel', 'fa-copy', '复制「' + short + '」')
++      html += item('searchsel', 'fa-magnifying-glass', '必应搜索「' + short + '」')
++    }
++    if (ctxState.href) {
++      html += item('openlink', 'fa-up-right-from-square', '新标签页打开链接')
++      html += item('copylink', 'fa-link', '复制链接地址')
++    }
++    if (ctxState.src) {
++      html += item('openimg', 'fa-image', '新标签页查看图片')
++      html += item('copyimg', 'fa-link', '复制图片地址')
++    }
++    ctxGroup.innerHTML = html
++    ctxGroup.style.display = html ? '' : 'none'
++
++    show(e.clientX, e.clientY)
++  })
++
++  document.addEventListener('click', hide)
++  document.addEventListener('scroll', hide, { passive: true })
++  window.addEventListener('resize', hide)
++
++  // ---------- 动作分发 ----------
++  menu.addEventListener('click', e => {
++    const btn = e.target.closest('[data-act]')
++    if (!btn) return
++    e.stopPropagation()
++    const act = btn.getAttribute('data-act')
++    switch (act) {
++      case 'back': history.back(); break
++      case 'forward': history.forward(); break
++      case 'refresh': location.reload(); break
++      case 'top':
++        if (window.btf && btf.scrollToDest) btf.scrollToDest(0, 500)
++        else window.scrollTo({ top: 0, behavior: 'smooth' })
++        break
++      case 'random': randomPost(); break
++      case 'copyurl': copy(location.href).then(() => toast('已复制本页网址')); break
++      case 'darkmode': {
++        const sw = document.getElementById('darkmode')
++        if (sw) sw.click()
++        else if (window.btf) {
++          const wm = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
++          wm === 'dark' ? btf.activateDarkMode() : btf.activateLightMode()
++          btf.saveToLocal.set('theme', wm, 2)
++        }
++        break
++      }
++      case 'copysel': copy(ctxState.sel).then(() => toast('已复制选中文字')); break
++      case 'searchsel':
++        window.open('https://www.bing.com/search?q=' + encodeURIComponent(ctxState.sel), '_blank')
++        break
++      case 'openlink': window.open(ctxState.href, '_blank'); break
++      case 'copylink': copy(ctxState.href).then(() => toast('已复制链接地址')); break
++      case 'openimg': window.open(ctxState.src, '_blank'); break
++      case 'copyimg': copy(ctxState.src).then(() => toast('已复制图片地址')); break
++    }
++    hide()
++  })
++})()
