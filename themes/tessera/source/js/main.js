@@ -674,7 +674,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const $htmlDom = document.documentElement.classList
       const saveStatus = $htmlDom.contains('hide-aside') ? 'show' : 'hide'
       btf.saveToLocal.set('aside-status', saveStatus, 2)
-      $htmlDom.toggle('hide-aside')
+      // 瀑布流页面：卡片位置由 JS 持有，CSS 宽度过渡与 JS 重排无法可靠同帧。
+      // 改用确定性方案：淡出 -> 瞬时切换布局并按新宽度重排 -> 淡入。
+      const masonryWrap = btf.masonryItem && document.getElementById('recent-posts')
+      if (masonryWrap) {
+        // 行内 transition 同时覆盖掉宽度的 CSS 过渡：布局在不可见阶段瞬时完成
+        masonryWrap.style.transition = 'opacity .2s ease'
+        masonryWrap.style.opacity = '0'
+        setTimeout(() => {
+          $htmlDom.toggle('hide-aside')
+          btf.masonryItem && btf.masonryItem.renderItems({ useResize: true })
+          setTimeout(() => {
+            masonryWrap.style.opacity = '1'
+            setTimeout(() => {
+              masonryWrap.style.transition = ''
+              masonryWrap.style.opacity = ''
+            }, 250)
+          }, 60)
+        }, 210)
+      } else {
+        $htmlDom.toggle('hide-aside')
+      }
     },
     'mobile-toc-button': (p, item) => { // Show mobile toc
       const tocEle = document.getElementById('card-toc')
@@ -894,8 +914,14 @@ document.addEventListener('DOMContentLoaded', () => {
         useTransform: true,
         useResizeObserver: true
       })
+      // 首次排版完成后再淡入，避免「先两列网格、再被 JS 重排」的闪烁
+      masonryItem.once('renderComplete', () => {
+        const itemsWrap = recentPostsElement.querySelector('.recent-post-items')
+        itemsWrap && itemsWrap.classList.add('grid-ready')
+      })
       masonryItem.renderItems()
-      btf.addGlobalFn('pjaxCompleteOnce', () => { masonryItem.destroy() }, 'removeJustifiedIndexPostUI')
+      btf.masonryItem = masonryItem // 暴露实例：侧栏开关等布局过渡期间需要逐帧驱动重排
+      btf.addGlobalFn('pjaxCompleteOnce', () => { masonryItem.destroy(); btf.masonryItem = null }, 'removeJustifiedIndexPostUI')
     }
 
     typeof InfiniteGrid === 'function' ? init() : btf.getScript(`${GLOBAL_CONFIG.infinitegrid.js}`).then(init)

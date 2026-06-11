@@ -1,0 +1,56 @@
+//- Tessera 首页开屏模块（致敬安知鱼 home_top）
+//- 左：标语卡（含滚动图标墙）+ 分类入口卡；右：推荐位横幅
+- const ht = theme.home_top
+- const icons = ht.icons || []
+- const row1 = icons.filter((v, i) => i % 2 === 0)
+- const row2 = icons.filter((v, i) => i % 2 === 1)
+- const cats = ht.category || []
+- const bn = ht.banner
+
+#home-top
+  .home-top-left
+    .htop-banner
+      .htop-text
+        .htop-title= ht.title
+        .htop-title= ht.subTitle
+        if ht.siteText
+          .htop-site= ht.siteText
+      if icons.length
+        //- 双组结构：两组相同图标各自位移 -100%，循环点两组内容重合，结构上保证无缝
+        .htop-iconwall(aria-hidden='true')
+          .htop-iconrow
+            .htop-icontrack
+              each n in [0, 1, 2]
+                .htop-iconset
+                  each it in row1
+                    .htop-tile(style=`background:${it.color}`)
+                      i(class=it.icon)
+          if row2.length
+            .htop-iconrow.htop-reverse
+              .htop-icontrack
+                each n in [0, 1, 2]
+                  .htop-iconset
+                    each it in row2
+                      .htop-tile(style=`background:${it.color}`)
+                        i(class=it.icon)
+    if cats.length
+      .htop-categories
+        each c in cats
+          //- 从 color 配置中提取第一个颜色值作为强调色（描边、图标线框都用它）
+          - const m = (c.color || '').match(/#[0-9a-fA-F]{3,8}|rgba?\([^)]+\)/)
+          - const accent = m ? m[0] : 'var(--tessera-primary)'
+          a.htop-cat(href=url_for(c.path) style=`--cat-accent:${accent}`)
+            span.htop-cat-name= c.name
+            if c.icon
+              i.htop-cat-icon(class=c.icon)
+  if bn && bn.enable !== false
+    - const bnStyle = bn.image ? `background-image:url(${url_for(bn.image)})` : 'background:linear-gradient(135deg,#1b1f3a,#425AEF)'
+    a.htop-recommend(href=url_for(bn.link || '/') style=bnStyle)
+      .htop-rec-mask
+      .htop-rec-info
+        if bn.tips
+          .htop-rec-tips= bn.tips
+        .htop-rec-title= bn.title
+      .htop-rec-btn
+        i.fas.fa-circle-arrow-right
+        span= bn.button || '更多推荐'
