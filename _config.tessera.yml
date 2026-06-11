@@ -69,3 +69,73 @@ wordcount:
 pjax:
   enable: true
   exclude:
+
+# 封面（新版主题新增项）
+# random_cover_dir：未设置 cover 的文章从该目录随机取封面，目录相对站点 source/
+cover:
+  random_cover_dir: cover
+
+# 首页开屏模块 home_top（新版主题新增项）
+# 标语卡 + 滚动图标墙 + 分类入口 + 推荐位，仅首页第一页显示。
+# icons / category 为数组，覆盖时整组替换（不会与主题默认合并），需写全。
+home_top:
+  enable: true
+  title: 只要想念
+  subTitle: 就会相见。
+  siteText: TALYRA42
+  # 图标墙：奇偶项自动分两行反向滚动
+  icons:
+    - icon: fab fa-js
+      color: "#f0db4f"
+    - icon: fab fa-react
+      color: "#61dafb"
+    - icon: fab fa-vuejs
+      color: "#41b883"
+    - icon: fab fa-node-js
+      color: "#68a063"
+    - icon: fab fa-html5
+      color: "#e34f26"
+    - icon: fab fa-css3-alt
+      color: "#264de4"
+    - icon: fab fa-python
+      color: "#3776ab"
+    - icon: fab fa-git-alt
+      color: "#f05032"
+    - icon: fab fa-docker
+      color: "#2496ed"
+    - icon: fab fa-linux
+      color: "#333333"
+    - icon: fab fa-github
+      color: "#24292e"
+    - icon: fab fa-npm
+      color: "#cb3837"
+    - icon: fab fa-java
+      color: "#e76f00"
+    - icon: fab fa-rust
+      color: "#ce422b"
+    - icon: fab fa-golang
+      color: "#00add8"
+    - icon: fab fa-php
+      color: "#777bb4"
+  # 分类入口：建议 2-3 个，color 支持渐变
+  category:
+    - name: Linux
+      path: /categories/linux/
+      icon: fas fa-dove
+      color: "linear-gradient(120deg, #425AEF, #7a8eff)"
+    - name: 前端
+      path: /categories/frontend/
+      icon: fas fa-fire
+      color: "linear-gradient(120deg, #f65c2c, #ff9a52)"
+    - name: 后端
+      path: /categories/backend/
+      icon: fas fa-book
+      color: "linear-gradient(120deg, #0fb6a5, #4cd9b0)"
+  # 推荐位横幅：image 留空则用主题色渐变兜底
+  banner:
+    enable: true
+    tips: 主题
+    title: Hexo Theme Tessera
+    image:
+    link: https://github.com/LumiDesk/hexo-theme-tessera
+    button: 了解一下
