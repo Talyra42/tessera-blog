@@ -14,7 +14,7 @@ timezone: 'Asia/Shanghai'
 # URL
 ## Set your site url here. For example, if you use GitHub Page, set url as 'https://username.github.io/project'
 ## 部署到 Vercel 后，把下面改成你的实际域名（如 https://tessera.vercel.app）
-url: https://tessera-blog.vercel.app/
+url: https://blog.talyra42.top/
 permalink: :year/:month/:day/:title/
 permalink_defaults:
 pretty_urls:

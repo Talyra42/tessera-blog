@@ -2,7 +2,7 @@
 
 Talyra42 的个人博客，基于 [Hexo](https://hexo.io/) 搭建，使用 tessera 主题。
 
-线上地址：<https://tessera-blog.vercel.app/>
+线上地址：<https://blog.talyra42.top/>
 
 ## 环境准备
 
