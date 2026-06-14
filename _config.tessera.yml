@@ -8,6 +8,8 @@
 site_verification:
   - name: msvalidate.01
     content: 18B08FBE5E43C5EF3DCC926E898EA158
+  - name: google-site-verification
+    content: DXj_GmbTGxwWyYGPtu3zlujWiGuiPKp1ZPWd9pUhW1o
 
 # 导航菜单
 menu:
