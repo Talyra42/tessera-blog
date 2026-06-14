@@ -4,6 +4,11 @@
 # 升级主题时无需改动主题目录。仅写需要自定义的项即可。
 # --------------------------------------
 
+# 站长验证（Bing / Google / 百度等）
+site_verification:
+  - name: msvalidate.01
+    content: 18B08FBE5E43C5EF3DCC926E898EA158
+
 # 导航菜单
 menu:
   首页: / || fas fa-home
