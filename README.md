@@ -15,7 +15,7 @@ pnpm install
 ### 创建文章
 
 ```bash
-npx hexo new post "文章标题"
+./tools/new.sh "New Post Title"
 ```
 
 生成的 Markdown 文件位于 [source/_posts/](source/_posts/)。
@@ -23,7 +23,7 @@ npx hexo new post "文章标题"
 ### 本地运行
 
 ```bash
-./run.sh
+./tools/run.sh
 ```
 
 等价于 `pnpm clean && pnpm server`，会先清理缓存再启动本地服务，默认访问 <http://localhost:4000>。
