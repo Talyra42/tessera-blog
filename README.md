@@ -7,7 +7,7 @@ Talyra42 的个人博客，基于 [Hexo](https://hexo.io/) 搭建，使用 tesse
 ## 环境准备
 
 ```bash
-pnpm install
+bun install
 ```
 
 ## 常用命令
@@ -31,8 +31,7 @@ pnpm install
 ### 构建与部署
 
 ```bash
-pnpm build    # 生成静态文件到 public/
-pnpm deploy   # 部署
+bun build    # 生成静态文件到 public/
 ```
 
 ## 写作规范
