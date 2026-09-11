@@ -1,0 +1,13 @@
+image:
+  linkFormat: asset_img
+  nameFormat: null
+frontMatter:
+  common:
+    title: "{{title}}"
+    date: "{{date}}"
+    tags:
+    categories:
+  post:
+    layout: post
+  draft:
+    layout: post
