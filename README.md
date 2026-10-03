@@ -26,7 +26,7 @@ bun install
 ./tools/run.sh
 ```
 
-等价于 `pnpm clean && pnpm server`，会先清理缓存再启动本地服务，默认访问 <http://localhost:4000>。
+等价于 `bun clean && bun server`，会先清理缓存再启动本地服务，默认访问 <http://localhost:4000>。
 
 ### 构建与部署
 
