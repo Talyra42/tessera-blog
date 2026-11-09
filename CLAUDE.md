@@ -8,21 +8,21 @@ Talyra42 的个人博客（<https://blog.talyra42.top/>），Hexo 8 静态站点
 
 ## 常用命令
 
-包管理用 **bun**（存在 `bun.lock`）。仓库内没有 CI / 部署配置：`_config.yml` 的 `deploy.type` 为空，线上部署依靠 `bun run build` 产出的 `public/`（`_config.yml` 注释提到 Vercel）。
+包管理用 **pnpm**（存在 `pnpm-lock.yaml`）。仓库内没有 CI / 部署配置：`_config.yml` 的 `deploy.type` 为空，线上部署依靠 `pnpm build` 产出的 `public/`（`_config.yml` 注释提到 Vercel）。
 
 ```bash
-bun install                 # 安装依赖
-./tools/new.sh "文章标题"    # 新建文章（内部调用 npx hexo new post，套用 scaffolds/post.md）
-./tools/run.sh              # 本地预览 = bun run clean && bun run server，默认 http://localhost:4000
-bun run build               # hexo generate → public/
-bun run clean               # hexo clean
-bun run server              # hexo server（不清理缓存）
-bun run deploy              # hexo deploy（当前配置为空，实际部署靠构建产物）
+pnpm install                # 安装依赖
+./tools/new.sh "文章标题"    # 新建文章（内部调用 pnpm exec hexo new post，套用 scaffolds/post.md）
+./tools/run.sh              # 本地预览 = pnpm clean && pnpm server，默认 http://localhost:4000
+pnpm build                  # hexo generate → public/
+pnpm clean                  # hexo clean
+pnpm server                 # hexo server（不清理缓存）
+pnpm deploy                 # hexo deploy（当前配置为空，实际部署靠构建产物）
 ```
 
 `tools/*.sh` 是 POSIX 脚本，Windows 下需在 Git Bash 中运行（Bash 工具可直接执行），不要用 PowerShell 调 `./tools/run.sh`。
 
-没有测试框架；仓库级别的验证手段就是 `bun run build` 跑通、产物正常。
+没有测试框架；仓库级别的验证手段就是 `pnpm build` 跑通、产物正常。
 
 ## 架构要点
 
@@ -62,6 +62,8 @@ bun run deploy              # hexo deploy（当前配置为空，实际部署靠
 
 ## 其他
 
-- `db.json`、`public/`、`node_modules/` 均被 gitignore，不要提交；`db.json` 是 Hexo 缓存，渲染异常时先 `bun run clean`。
+- `db.json`、`public/`、`node_modules/` 均被 gitignore，不要提交；`db.json` 是 Hexo 缓存，渲染异常时先 `pnpm clean`。
+- 主题脚本（如 `scripts/events/init.js`）会 `require('hexo-util')` / `moment-timezone`，这两个包在 pnpm 的隔离布局下不在根 `node_modules`，靠 pnpm 注入的 `NODE_PATH` 才能解析。所以 hexo 命令要走 `pnpm exec` / `pnpm run`（或 `npx`，它经 `.bin` shim 同样注入），直接 `node node_modules/hexo/bin/hexo generate` 会报 `Cannot find module 'hexo-util'`。
+- [pnpm-workspace.yaml](pnpm-workspace.yaml) 不是多包工作区，只用来放 `allowBuilds`（允许 `hexo-util` 的 postinstall 构建脚本）。
 - Dependabot 每日检查 npm 依赖（[.github/dependabot.yml](.github/dependabot.yml)）。
 - [.hexo-workbench.yml](.hexo-workbench.yml) 供 VS Code 的 Hexo Workbench 扩展使用（新建文章的 front matter 模板），与 Hexo 构建无关。

@@ -7,7 +7,7 @@ Talyra42 的个人博客，基于 [Hexo](https://hexo.io/) 搭建，使用 tesse
 ## 环境准备
 
 ```bash
-bun install
+pnpm install
 ```
 
 ## 常用命令
@@ -26,12 +26,12 @@ bun install
 ./tools/run.sh
 ```
 
-等价于 `bun clean && bun server`，会先清理缓存再启动本地服务，默认访问 <http://localhost:4000>。
+等价于 `pnpm clean && pnpm server`，会先清理缓存再启动本地服务，默认访问 <http://localhost:4000>。
 
 ### 构建与部署
 
 ```bash
-bun build    # 生成静态文件到 public/
+pnpm build    # 生成静态文件到 public/
 ```
 
 ## 写作规范

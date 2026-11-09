@@ -9,4 +9,4 @@ fi
 
 title="$1"
 
-npx hexo new post "$title"
+pnpm exec hexo new post "$title"
