@@ -53,6 +53,12 @@ aside:
   card_announcement:
     enable: true
     content: 这里记录我的学习与思考，欢迎常来逛逛 ✨
+  # 系列文章卡片：标题显示系列名，按时间正序（第一篇在前）
+  card_post_series:
+    enable: true
+    series_title: true
+    orderBy: 'date'
+    order: 1
 
 # 分享功能：留空即关闭，文章底部不显示任何分享方式
 share:
